@@ -98,3 +98,16 @@ print("distinct months present:", sorted(set(a["month"]), key=int), " rows per y
 score_cols = h2[4:]
 miss2 = sum(x.strip() in MISSING_CODES for k in score_cols for x in a[k])
 print("missing exposure-score cells:", miss2)
+
+# EDA
+plt.rcParams.update({"figure.dpi": 130, "font.size": 9, "axes.spines.top": False, "axes.spines.right": False})
+BLUE, ORANGE = "#2a6f97", "#d1495b"
+
+# Fig 1: distribution of the target (log10 risk), as used in the paper's regressions
+fig, ax = plt.subplots(1, 2, figsize=(8, 3))
+ax[0].hist(risk[risk <= 0.05], bins=80, color=BLUE)
+ax[0].set(title="Raw unemployment risk (<=0.05)", xlabel="share of occupation receiving UI", ylabel="rows")
+ax[1].hist(np.log10(risk), bins=80, color=BLUE)
+ax[1].axvline(0, color=ORANGE, ls="--", lw=1)
+ax[1].set(title="log10(risk): approx. symmetric", xlabel="log10(risk); dashed = risk of 1")
+fig.tight_layout(); fig.savefig(f"{FIG}/fig1_risk_distribution.png"); plt.close(fig)
