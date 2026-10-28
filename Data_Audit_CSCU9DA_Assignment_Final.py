@@ -111,3 +111,41 @@ ax[1].hist(np.log10(risk), bins=80, color=BLUE)
 ax[1].axvline(0, color=ORANGE, ls="--", lw=1)
 ax[1].set(title="log10(risk): approx. symmetric", xlabel="log10(risk); dashed = risk of 1")
 fig.tight_layout(); fig.savefig(f"{FIG}/fig1_risk_distribution.png"); plt.close(fig)
+
+# Fig 2: mean monthly risk over time, by SOC group (top/bottom) + national trend
+tkey = year * 12 + (month - 1)
+t_all = np.array(sorted(set(tkey)))
+def series(mask):
+    return np.array([np.nanmedian(risk[mask & (tkey == t)]) if (mask & (tkey == t)).any() else np.nan for t in t_all])
+med_by_soc = {s: np.nanmedian(risk[soc == s]) for s in set(soc)}
+order = sorted(med_by_soc, key=med_by_soc.get)
+fig, ax = plt.subplots(figsize=(8, 3.2))
+x = 2010 + (t_all - 2010 * 12) / 12
+for s in set(soc):
+    ax.plot(x, series(soc == s), color="#bbbbbb", lw=0.7)
+for s, c, lab in [(order[0], BLUE, f"SOC {order[0]} (lowest median)"), (order[-1], ORANGE, f"SOC {order[-1]} (highest median)")]:
+    ax.plot(x, series(soc == s), color=c, lw=1.8, label=lab)
+ax.set_yscale("log"); ax.axvline(2020.17, color="k", ls=":", lw=1)
+ax.text(2020.1, ax.get_ylim()[1], "COVID-19", ha="right", va="top", fontsize=8)
+ax.set(title="Median unemployment risk by 2-digit SOC group (grey = all 22 groups)",
+       xlabel="year", ylabel="median risk (log scale)"); ax.legend(frameon=False, loc="lower left")
+fig.tight_layout(); fig.savefig(f"{FIG}/fig2_risk_over_time.png"); plt.close(fig)
+
+# Fig 3: correlation among the 11 exposure scores (the motivation for an ensemble / LASSO)
+M = np.column_stack([num(a[k]) for k in score_cols])
+C = np.corrcoef(M, rowvar=False)
+fig, ax = plt.subplots(figsize=(6.4, 5.2))
+im = ax.imshow(C, cmap="RdBu_r", vmin=-1, vmax=1)
+ax.set_xticks(range(len(score_cols))); ax.set_yticks(range(len(score_cols)))
+ax.set_xticklabels(score_cols, rotation=75, ha="right", fontsize=7); ax.set_yticklabels(score_cols, fontsize=7)
+for i in range(len(score_cols)):
+    for j in range(len(score_cols)):
+        ax.text(j, i, f"{C[i, j]:.1f}", ha="center", va="center", fontsize=6)
+fig.colorbar(im, shrink=0.8); ax.set_title("Pearson correlation of AI/automation exposure scores\n(state-month level, n=549)")
+fig.tight_layout(); fig.savefig(f"{FIG}/fig3_exposure_correlations.png"); plt.close(fig)
+
+off = C[np.triu_indices_from(C, 1)]
+print(f"\nexposure scores: median |r| = {np.median(np.abs(off)):.2f}; "
+      f"{(np.abs(off) > 0.9).sum()} of {len(off)} pairs have |r| > 0.9; "
+      f"{(off < -0.5).sum()} pairs correlate below -0.5")
+print("figures written to", FIG)
