@@ -131,7 +131,7 @@ ax.set(title="Median unemployment risk by 2-digit SOC group (grey = all 22 group
        xlabel="year", ylabel="median risk (log scale)"); ax.legend(frameon=False, loc="lower left")
 fig.tight_layout(); fig.savefig(f"{FIG}/fig2_risk_over_time.png"); plt.close(fig)
 
-# Fig 3: correlation among the 11 exposure scores (the motivation for an ensemble / LASSO)
+# Fig 3: correlation among the exposure scores in the state file (12 columns) (the motivation for an ensemble / LASSO)
 M = np.column_stack([num(a[k]) for k in score_cols])
 C = np.corrcoef(M, rowvar=False)
 fig, ax = plt.subplots(figsize=(6.4, 5.2))
@@ -141,7 +141,7 @@ ax.set_xticklabels(score_cols, rotation=75, ha="right", fontsize=7); ax.set_ytic
 for i in range(len(score_cols)):
     for j in range(len(score_cols)):
         ax.text(j, i, f"{C[i, j]:.1f}", ha="center", va="center", fontsize=6)
-fig.colorbar(im, shrink=0.8); ax.set_title("Pearson correlation of AI/automation exposure scores\n(state-month level, n=549)")
+fig.colorbar(im, shrink=0.8); ax.set_title("Pearson correlation of AI/automation exposure scores\n(state-level file, n=549)")
 fig.tight_layout(); fig.savefig(f"{FIG}/fig3_exposure_correlations.png"); plt.close(fig)
 
 off = C[np.triu_indices_from(C, 1)]
@@ -149,3 +149,23 @@ print(f"\nexposure scores: median |r| = {np.median(np.abs(off)):.2f}; "
       f"{(np.abs(off) > 0.9).sum()} of {len(off)} pairs have |r| > 0.9; "
       f"{(off < -0.5).sum()} pairs correlate below -0.5")
 print("figures written to", FIG)
+
+# EXTRA CHECKS
+print(f"\nexposure score columns in repository file: {len(score_cols)} (paper's Table 2 uses 13; LLM score of Eloundou et al. is absent)")
+
+# Where are the absent panel cells? (structural reporting gaps vs random suppression)
+socs_u = sorted(set(soc))
+present = Counter(zip(states, soc))
+absent_state = {s: sum(n_months - present[(s, o)] for o in socs_u) for s in sorted(set(states))}
+top = sorted(absent_state.items(), key=lambda kv: -kv[1])[:3]
+tot_abs = sum(absent_state.values())
+print("absent cells by state (top 3):", top, f"-> {sum(v for _, v in top[:2]) / tot_abs:.0%} in the top two")
+for s in ("California", "Connecticut"):
+    print(f"  {s}: reports {len({o for (st_, o) in present if st_ == s})} of {n_soc} SOC groups; rows={sum(states == s)}")
+ri_years = sorted(set(year[states == "Rhode Island"].tolist()))
+print("  Rhode Island years present:", ri_years, "-> missing:", sorted(set(range(2010, 2021)) - set(ri_years)))
+
+# What produces the long left tail of log10(risk)?
+tail = np.log10(risk) < -5
+print(f"log10(risk) < -5: {tail.sum()} rows; contains {(count[tail] == 1).sum()} of {(count == 1).sum()} rows with claimant count 1; "
+      f"{(count[tail] <= 2).sum()} rows with count <= 2")
