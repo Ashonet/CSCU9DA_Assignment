@@ -2,7 +2,7 @@
 Data & code audit: Frank, Ahn & Moro (2025), "AI exposure predicts unemployment risk", PNAS Nexus, doi:10.1093/pnasnexus/pgaf107.
 
 Raw data: https://github.com/mrfrank8176/unemploymentRisk  (demoData_*.csv)
-Usage:  python Data_Audit_CSCU9DA_Final            (downloads the CSVs into ./data if absent)
+Usage:  python Data_Audit_CSCU9DA_Assignment_Final.py   (downloads the CSVs into ./data if absent)
 Needs:  numpy, matplotlib  
 """
 import csv
@@ -112,7 +112,7 @@ ax[1].axvline(0, color=ORANGE, ls="--", lw=1)
 ax[1].set(title="log10(risk): approx. symmetric", xlabel="log10(risk); dashed = risk of 1")
 fig.tight_layout(); fig.savefig(f"{FIG}/fig1_risk_distribution.png"); plt.close(fig)
 
-# Fig 2: mean monthly risk over time, by SOC group (top/bottom) + national trend
+# Fig 2: median monthly risk over time, by SOC group (top/bottom) + national trend
 tkey = year * 12 + (month - 1)
 t_all = np.array(sorted(set(tkey)))
 def series(mask):
